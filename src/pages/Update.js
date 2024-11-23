@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import Footer from '../part/Footer';
@@ -26,12 +26,8 @@ export default function Update() {
     position: null,
   });
 
-  // 입력 값 변경 처리
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-
-    // 실시간으로 유효성 검사
+  // 유효성 검사 함수
+  const validateForm = () => {
     const newValidity = {
       name: formData.name.length >= 2,
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email),
@@ -40,6 +36,37 @@ export default function Update() {
     };
 
     setFormValidity(newValidity);
+    return newValidity;
+  };
+
+  // 입력 값 변경 처리
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // 포커스 아웃 시 유효성 검사
+  const handleBlur = () => {
+    const newValidity = validateForm();
+    
+    // 유효성 검사를 통과한 경우에만 API 업데이트
+    if (Object.values(newValidity).every((isValid) => isValid)) {
+      axios.put(`https://672818a4270bd0b975544ed3.mockapi.io/people/${item.id}`, formData)
+        .then((res) => {
+          console.log('API 업데이트 성공:', res);
+        })
+        .catch((err) => {
+          console.error('API 업데이트 실패:', err);
+        });
+    }
+  };
+
+  // 실시간 유효성 검사 및 API 업데이트
+  const handleRealTimeChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    const newValidity = validateForm();
 
     // 유효성 검사를 통과한 경우에만 API 업데이트
     if (Object.values(newValidity).every((isValid) => isValid)) {
@@ -94,7 +121,8 @@ export default function Update() {
                     value={formData[key]}
                     placeholder={getPlaceholder(key)} // 유틸리티 함수 사용
                     className={`form-control ${formValidity[key] === null ? '' : formValidity[key] ? 'is-valid' : 'is-invalid'}`}
-                    onChange={handleChange}
+                    onChange={handleRealTimeChange} // 실시간 유효성 검사
+                    onBlur={handleBlur} // 포커스 아웃 시 유효성 검사
                   />
                   <div className="invalid-feedback">{getErrorMessage(key)}</div>
                   <div className="valid-feedback">사용가능 합니다</div>
